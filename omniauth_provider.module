@@ -1,0 +1,113 @@
+<?php
+// $Id$
+
+/**
+ *
+ */
+
+/**
+ * Implement HOOK_init().
+ */
+function omniauth_provider_init() {
+/*
+  global $custom_theme, $user;
+  $default_theme = $custom_theme;
+
+  // Switch theme if refferer contains "remote"
+  $remote = strpos($_SERVER["HTTP_REFERER"], 'remote') ? TRUE : FALSE;
+  if ($remote || $_SESSION['zeit-sso-provider-remote']) {
+    // do it now
+    $_SESSION['zeit-sso-provider-remote'] = TRUE;
+    $custom_theme = 'zeit_remote';
+  }
+  else if (!$remote && !strpos($_SERVER["HTTP_REFERER"], $_SERVER["HTTP_HOST"])) {
+    $_SESSION['zeit-sso-provider-remote'] = FALSE;
+  }
+
+  if ($user->uid) {
+    $_SESSION['zeit-sso-provider-remote'] = FALSE;
+    $custom_theme = $default_theme;
+  }
+
+  // Unswitch theme in case people came from registration mail links
+  if (isset($_GET['realm']) && arg(0) == 'user') {    
+    $_SESSION['zeit-sso-provider-remote'] = FALSE;
+    $custom_theme = $default_theme;
+  }
+*/
+}
+
+/**
+ * Implement HOOK_menu_alter().
+ */
+function omniauth_provider_menu_alter(&$items) {
+  // Remove OpenID Provider information from profile page
+  $items['user/%user/openid-sites']['access callback'] = 'user_access';
+  $items['user/%user/openid-sites']['access arguments'] = array('administer openid provider');
+}
+
+/**
+ * Implement HOOK_user().
+ */
+function omniauth_provider_user($op, &$edit, &$account, $category = NULL) {
+  switch ($op) {
+    case 'login':
+    case 'logout':
+      //TODO: add js for breakout and die if remote
+      $_SESSION['zeit-sso-provider-remote'] = FALSE;
+      break;
+    case 'insert':
+      //TODO: add js for breakout and die if remote
+      break;
+    case 'view':
+      if (!user_access('administer openid provider')) {
+        unset($account->content['openid']);
+      }
+      break;
+  }
+}
+
+/**
+ * Implement HOOK_form_alter().
+ */
+function omniauth_provider_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'user_profile_form' && user_access('administer users')) {
+  }
+}
+
+function omniauth_provider_block($op = 'list', $delta = 0, $edit = array()) {
+  if ($op == 'list') {
+    $blocks[0] = array(
+      'info' => t('List of relying parties'),
+    );
+    return $blocks;
+  }
+  else if ($op == 'configure' && $delta == 0) {
+  }
+  else if ($op == 'save' && $delta == 0) {
+  }
+  else if ($op == 'view') {
+    switch($delta) {
+      case 0:
+        $block = array(
+          'subject' => t('Relying Parties'),
+          'content' => omniauth_provider_block_1()
+        );
+        break;
+    }
+    return $block;
+  }
+}
+
+/**
+ *
+ */
+function omniauth_provider_block_1() {
+  $items = array();
+  $realms = openid_provider_sso_relying_parties();
+  foreach ($realms as $rp) {
+    $items[] = '<strong>'. l(check_plain($rp['name']), check_url($rp['realm'])) .'</strong> '. check_url($rp['realm']);
+  }
+  return theme('item_list', $items, NULL, 'ol');
+}
+

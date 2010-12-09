@@ -1,0 +1,144 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *
+ * @author
+ * Stefan Auditor <stefan.auditor@erdfisch.de>
+ */
+
+/**
+ * Implement HOOK_user().
+ */
+function omniauth_initialize_user($op, &$edit, &$account, $category = NULL) {
+  switch ($op) {
+    case 'insert':
+      $realms = omniauth_initialize_get_realms();
+      foreach ($realms as $realm) {
+        omniauth_initialize_trust_build_store($realm, $account);
+      }
+      break;
+    case 'delete':
+      $realms = omniauth_initialize_get_realms();
+      foreach ($realms as $realm) {
+        omniauth_initialize_trust_build_remove($realm, $account);
+      }
+      break;
+  }
+}
+
+/**
+ * 
+ */
+function omniauth_initialize_get_realms() {
+  $realms = array();
+  $result = db_query("SELECT realm FROM {openid_provider_sso_rps}");
+  while ($row = db_fetch_object($result)) {
+    $realms[$row->realm] = $row->realm;
+  }
+  return $realms;
+}
+
+/**
+ *
+ */
+function omniauth_initialize_form_openid_provider_sso_rp_edit_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'omniauth_initialize_form_openid_provider_sso_rp_edit_form_alter_submit';
+}
+
+/**
+ *
+ */
+function omniauth_initialize_form_openid_provider_sso_rp_edit_form_alter_submit(&$form, &$form_state) {
+  // Generate auto trust
+  $batch = array(
+    'title' => t('Builing trust for newly added relying party'),
+    'operations' => array(
+      array('omniauth_initialize_trust_build', array($form_state['values']['realm'])),
+    ),
+    'finished' => 'omniauth_initialize_trust_build_finished',
+  );
+  batch_set($batch);
+}
+
+/**
+ *
+ */
+function omniauth_initialize_trust_build($realm, &$context) {
+  if (empty($context['sandbox'])) {
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['current_user'] = 0;
+    $context['sandbox']['max'] = db_result(db_query('SELECT COUNT(DISTINCT uid) FROM {users} WHERE uid > 0'));
+  }
+  $limit = 5;
+  $result = db_query_range("SELECT uid FROM {users} WHERE uid > %d ORDER BY uid ASC", $context['sandbox']['current_user'], 0, $limit);
+  while ($row = db_fetch_array($result)) {
+    $account = user_load(array('uid' => $row['uid']));
+    $context['results'][] = $account->uid .' : '. $account->name;
+    $context['sandbox']['progress']++;
+    $context['sandbox']['current_user'] = $account->uid;
+    $context['message'] = t('Processing user @username', array('@username' => $account->name));
+
+    // Generate trust for realm
+    omniauth_initialize_trust_build_store($realm, $account);
+  }
+  if ($context['sandbox']['progress'] != $context['sandbox']['max']) {
+    $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
+  }
+}
+
+/**
+ *
+ */
+function omniauth_initialize_trust_build_finished($success, $results, $operations) {
+  if ($success) {
+    $message = format_plural(count($results), 'One user account has been initialized.', '@count user accounts have been initialized.');
+  }
+  else {
+    $message = t('Finished with an error.');
+  }
+  drupal_set_message($message);
+  // Providing data for the redirected page is done through $_SESSION.
+  foreach ($results as $result) {
+    $items[] = t('Built trust for user %title.', array('%title' => $result));
+  }
+  $_SESSION['omniauth_initialize'] = $items;
+}
+
+/**
+ *
+ */
+function omniauth_initialize_trust_build_store($realm, $account) {
+  $now = time();
+  $dataset = array(
+    'uid' => $account->uid,
+    'realm' => $realm,
+    'first_time' => $now,
+    'last_time' => 0,
+    'auto_release' => 1,
+  );
+  drupal_write_record('openid_provider_relying_party', $dataset);
+}
+
+/**
+ *
+ */
+function omniauth_initialize_trust_build_remove($realm, $account) {
+  db_query("DELETE FROM {openid_provider_relying_party} WHERE realm = '%s' AND uid = %d", $realm, $account->uid);
+}
+
+/**
+ *
+ */
+function omniauth_initialize_form_openid_provider_sso_rp_remove_form_alter($form, &$form_state) {
+  $form['#submit'][] = 'omniauth_initialize_form_openid_provider_sso_rp_remove_form_alter_submit';
+}
+
+/**
+ *
+ */
+function omniauth_initialize_form_openid_provider_sso_rp_remove_form_alter_submit(&$form, &$form_state) {
+  $realm = $form['#realm'];
+  db_query("DELETE FROM {openid_provider_relying_party} WHERE realm = '%s'", $realm);
+}

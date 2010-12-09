@@ -1,0 +1,7 @@
+; $Id$
+name = "Omniauth Provider Initializer"
+description = "Initialize user accounts for new trusted sites"
+core = "6.x"
+version = "6.x-1.0-alpha1"
+package = "OpenID"
+dependencies[] = "openid_provider_sso"
