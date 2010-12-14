@@ -2,40 +2,12 @@
 // $Id$
 
 /**
+ * @file
  *
+ * @author
+ * Stefan Auditor <stefan.auditor@erdfisch.de>
+ * Felix Delattre <felix.delattre@erdfisch.de>
  */
-
-/**
- * Implement HOOK_init().
- */
-function omniauth_provider_init() {
-/*
-  global $custom_theme, $user;
-  $default_theme = $custom_theme;
-
-  // Switch theme if refferer contains "remote"
-  $remote = strpos($_SERVER["HTTP_REFERER"], 'remote') ? TRUE : FALSE;
-  if ($remote || $_SESSION['zeit-sso-provider-remote']) {
-    // do it now
-    $_SESSION['zeit-sso-provider-remote'] = TRUE;
-    $custom_theme = 'zeit_remote';
-  }
-  else if (!$remote && !strpos($_SERVER["HTTP_REFERER"], $_SERVER["HTTP_HOST"])) {
-    $_SESSION['zeit-sso-provider-remote'] = FALSE;
-  }
-
-  if ($user->uid) {
-    $_SESSION['zeit-sso-provider-remote'] = FALSE;
-    $custom_theme = $default_theme;
-  }
-
-  // Unswitch theme in case people came from registration mail links
-  if (isset($_GET['realm']) && arg(0) == 'user') {    
-    $_SESSION['zeit-sso-provider-remote'] = FALSE;
-    $custom_theme = $default_theme;
-  }
-*/
-}
 
 /**
  * Implement HOOK_menu_alter().
@@ -51,13 +23,15 @@ function omniauth_provider_menu_alter(&$items) {
  */
 function omniauth_provider_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
-    case 'login':
-    case 'logout':
-      //TODO: add js for breakout and die if remote
-      $_SESSION['zeit-sso-provider-remote'] = FALSE;
-      break;
     case 'insert':
-      //TODO: add js for breakout and die if remote
+      // Auto create profile node when user is created
+      $node = new stdClass();
+      $node->type = 'profile';
+      $node->uid = $account->uid;
+      $node->status = 1;
+      $node->log = t('Auto created by Omniauth provider');
+      $node->title = ucfirst($account->name);
+      node_save($node);
       break;
     case 'view':
       if (!user_access('administer openid provider')) {
@@ -68,13 +42,19 @@ function omniauth_provider_user($op, &$edit, &$account, $category = NULL) {
 }
 
 /**
- * Implement HOOK_form_alter().
+ * Implement HOOK_form_FORM_ID_alter().
  */
-function omniauth_provider_form_alter(&$form, $form_state, $form_id) {
-  if ($form_id == 'user_profile_form' && user_access('administer users')) {
+function omniauth_provider_form_profile_node_form_alter(&$form, &$form_state) {
+  // Hide from normal users
+  if (!user_access('administer content')) {
+    $form['title']['#type'] = 'value';
+    $form['body_field']['#type'] = 'value';
   }
 }
 
+/**
+ * Implement HOOK_block().
+ */
 function omniauth_provider_block($op = 'list', $delta = 0, $edit = array()) {
   if ($op == 'list') {
     $blocks[0] = array(

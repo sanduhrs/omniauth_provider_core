@@ -15,6 +15,7 @@ dependencies[] = "openid_provider"
 dependencies[] = "openid_provider_ax"
 dependencies[] = "openid_provider_sso"
 dependencies[] = "omniauth_provider_initialize"
+dependencies[] = "omniauth_provider_access"
 dependencies[] = "text"
 dependencies[] = "xrds_simple"
 
