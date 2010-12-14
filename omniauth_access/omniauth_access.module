@@ -1,0 +1,42 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *
+ *
+ * @authhor
+ * Stefan Auditor <stefan.auditor@erdfisch.de>
+ */
+
+/**
+ * Implement HOOK_node_grants().
+ */
+function omniauth_access_node_grants($account, $op) {
+  $grants['owner'] = array($account->uid);
+  return $grants;
+}
+
+/**
+ * Implement HOOK_node_access_records().
+ */
+function omniauth_access_node_access_records($node) {
+  global $user;
+  $grants = array();
+
+  // Only act for content_profile nodes
+  if (!is_content_profile($node->type)) {
+    return;
+  }
+
+  $grants[] = array(
+    'realm'        => 'owner',
+    'gid'          => $node->uid,
+    'grant_view'   => TRUE,
+    'grant_update' => TRUE,
+    'grant_delete' => FALSE,
+    'priority'     => 1000,
+  );
+  return $grants;
+}
+
