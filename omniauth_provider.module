@@ -16,6 +16,10 @@ function omniauth_provider_menu_alter(&$items) {
   // Remove OpenID Provider information from profile page
   $items['user/%user/openid-sites']['access callback'] = 'user_access';
   $items['user/%user/openid-sites']['access arguments'] = array('administer openid provider');
+
+  if (!user_access('administer openid provider')) {
+    $items['user/%user/openid-sites']['access callback'] = FALSE;
+  }
 }
 
 /**
