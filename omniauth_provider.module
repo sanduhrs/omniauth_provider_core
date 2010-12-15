@@ -27,16 +27,6 @@ function omniauth_provider_menu_alter(&$items) {
  */
 function omniauth_provider_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
-    case 'insert':
-      // Auto create profile node when user is created
-      $node = new stdClass();
-      $node->type = 'profile';
-      $node->uid = $account->uid;
-      $node->status = 1;
-      $node->log = t('Auto created by Omniauth provider');
-      $node->title = ucfirst($account->name);
-      node_save($node);
-      break;
     case 'view':
       if (!user_access('administer openid provider')) {
         unset($account->content['openid']);
