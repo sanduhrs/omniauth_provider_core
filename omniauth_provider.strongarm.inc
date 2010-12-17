@@ -8,20 +8,6 @@ function omniauth_provider_strongarm() {
   $strongarm = new stdClass;
   $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
   $strongarm->api_version = 1;
-  $strongarm->name = 'content_extra_weights_profile';
-  $strongarm->value = array(
-    'title' => '-5',
-    'body_field' => '3',
-    'revision_information' => '5',
-    'author' => '4',
-    'options' => '6',
-    'menu' => '2',
-  );
-
-  $export['content_extra_weights_profile'] = $strongarm;
-  $strongarm = new stdClass;
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
   $strongarm->name = 'content_profile_profile';
   $strongarm->value = array(
     'weight' => 0,
@@ -77,19 +63,5 @@ function omniauth_provider_strongarm() {
   );
 
   $export['openid_profile_map'] = $strongarm;
-  $strongarm = new stdClass;
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'site_frontpage';
-  $strongarm->value = 'user';
-
-  $export['site_frontpage'] = $strongarm;
-  $strongarm = new stdClass;
-  $strongarm->disabled = FALSE; /* Edit this to true to make a default strongarm disabled initially */
-  $strongarm->api_version = 1;
-  $strongarm->name = 'user_email_verification';
-  $strongarm->value = TRUE;
-
-  $export['user_email_verification'] = $strongarm;
   return $export;
 }
