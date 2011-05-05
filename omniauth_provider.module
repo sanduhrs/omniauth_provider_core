@@ -32,6 +32,14 @@ function omniauth_provider_user($op, &$edit, &$account, $category = NULL) {
         unset($account->content['openid']);
       }
       break;
+    case 'after_update':
+     // if a redirect back to a relying party is set, goto it.
+     if (isset($_SESSION['omniauth_redirect'])) {
+       $omniauth_redirect_path = $_SESSION['omniauth_redirect'];
+       unset($_SESSION['omniauth_redirect']);
+       drupal_goto($omniauth_redirect_path);
+     }
+     break;
   }
 }
 
@@ -70,6 +78,17 @@ function omniauth_provider_block($op = 'list', $delta = 0, $edit = array()) {
         break;
     }
     return $block;
+  }
+}
+
+/**
+ * Implements hook_init()
+ */
+function omniauth_provider_init() {
+  // If information about later redirect has been found
+  if (isset($_GET['omniauth_redirect'])) {
+    // store this information into the $_SESSION array
+    $_SESSION['omniauth_redirect'] = $_GET['omniauth_redirect'];
   }
 }
 
