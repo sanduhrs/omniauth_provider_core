@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -8,6 +7,7 @@
  * Stefan Auditor <stefan.auditor@erdfisch.de>
  * Felix Delattre <felix.delattre@erdfisch.de>
  */
+include_once('omniauth_provider.features.inc');
 
 /**
  * Implement HOOK_menu_alter().
@@ -77,11 +77,30 @@ function omniauth_provider_block($op = 'list', $delta = 0, $edit = array()) {
  *
  */
 function omniauth_provider_block_1() {
-  $items = array();
-  $realms = openid_provider_sso_relying_parties();
-  foreach ($realms as $rp) {
-    $items[] = '<strong>'. l(check_plain($rp['name']), check_url($rp['realm'])) .'</strong> '. check_url($rp['realm']);
+
+  $realms = omniauth_provider_get_user_related_relying_parties();
+  if (!empty($realms)) {
+    $items = array();
+    foreach ($realms as $rp) {
+      $items[] = '<strong>'. l(check_plain($rp['name']), check_url($rp['realm'])) .'</strong> '. check_url($rp['realm']);
+    }
+    return theme('item_list', $items, NULL, 'ol');
   }
-  return theme('item_list', $items, NULL, 'ol');
+}
+
+
+function omniauth_provider_get_user_related_relying_parties() {
+  global $user;
+  // get the relying parties the current user has logged into.
+  $result = db_query('SELECT * FROM {openid_provider_sso_rps} rps1
+    INNER JOIN {openid_provider_relying_party} rps2
+    ON rps1.realm = rps2.realm
+    WHERE rps2.uid = %d', $user->uid);
+
+  $realms = array();
+  while ($rp = db_fetch_array($result)) {
+    $realms[$rp['realm']] = $rp;
+  }
+  return $realms;
 }
 
