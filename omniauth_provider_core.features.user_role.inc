@@ -3,7 +3,7 @@
 /**
  * Implementation of hook_user_default_roles().
  */
-function omniauth_provider_user_default_roles() {
+function omniauth_provider_core_user_default_roles() {
   $roles = array();
 
   // Exported role: authenticated user

@@ -3,7 +3,7 @@
 /**
  * Implementation of hook_content_default_fields().
  */
-function omniauth_provider_content_default_fields() {
+function omniauth_provider_core_content_default_fields() {
   $fields = array();
 
   // Exported field: field_birth_date

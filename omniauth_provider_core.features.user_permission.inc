@@ -3,7 +3,7 @@
 /**
  * Implementation of hook_user_default_permissions().
  */
-function omniauth_provider_user_default_permissions() {
+function omniauth_provider_core_user_default_permissions() {
   $permissions = array();
 
   // Exported permission: change own username
