@@ -5,14 +5,15 @@
  * @file
  *
  *
- * @authhor
+ * @authors
  * Stefan Auditor <stefan.auditor@erdfisch.de>
+ * Felix Delattre <felix.delattre@erdfisch.de>
  */
 
 /**
  * Implement HOOK_node_grants().
  */
-function omniauth_access_node_grants($account, $op) {
+function omniauth_provider_access_node_grants($account, $op) {
   $grants['owner'] = array($account->uid);
   return $grants;
 }
@@ -20,7 +21,7 @@ function omniauth_access_node_grants($account, $op) {
 /**
  * Implement HOOK_node_access_records().
  */
-function omniauth_access_node_access_records($node) {
+function omniauth_provider_access_node_access_records($node) {
   global $user;
   $grants = array();
 

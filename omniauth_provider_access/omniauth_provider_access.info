@@ -1,5 +1,5 @@
 ; $Id$
-name = "Omniauth Access"
+name = "Omniauth Provider Access"
 description = "Omniauth Provider Bundle"
 package = "OpenID"
 project = "omniauth_provider"
