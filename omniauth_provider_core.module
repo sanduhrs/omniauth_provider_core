@@ -111,7 +111,7 @@ function omniauth_provider_core_block_1() {
 function omniauth_provider_core_get_user_related_relying_parties() {
   global $user;
   // get the relying parties the current user has logged into.
-  $result = db_query('SELECT * FROM {openid_provider_sso_rps} rps1
+  $result = db_query('SELECT * FROM {openid_sso_provider_rps} rps1
     INNER JOIN {openid_provider_relying_party} rps2
     ON rps1.realm = rps2.realm
     WHERE rps2.uid = %d', $user->uid);
