@@ -64,16 +64,12 @@ function omniauth_provider_core_block($op = 'list', $delta = 0, $edit = array())
     );
     return $blocks;
   }
-  else if ($op == 'configure' && $delta == 0) {
-  }
-  else if ($op == 'save' && $delta == 0) {
-  }
   else if ($op == 'view') {
     switch($delta) {
       case 0:
         $block = array(
           'subject' => t('Relying Parties'),
-          'content' => omniauth_provider_core_block_1()
+          'content' => omniauth_provider_core_block_list_relying_parties()
         );
         break;
     }
@@ -93,21 +89,56 @@ function omniauth_provider_core_init() {
 }
 
 /**
- *
+ * Implements hook_theme()
  */
-function omniauth_provider_core_block_1() {
-
-  $realms = omniauth_provider_core_get_user_related_relying_parties();
-  if (!empty($realms)) {
-    $items = array();
-    foreach ($realms as $rp) {
-      $items[] = '<strong>'. l(check_plain($rp['name']), check_url($rp['realm'])) .'</strong> '. check_url($rp['realm']);
-    }
-    return theme('item_list', $items, NULL, 'ol');
-  }
+function omniauth_provider_core_theme() {
+  return array(
+    'omniauth_list_relying_parties' => array(
+        'arguments' => array('items' => NULL, 'origin' => FALSE)
+    ),
+  );
 }
 
 
+/**
+ * Generates content for a block that lists available relying parties to a user.
+ */
+function omniauth_provider_core_block_list_relying_parties() {
+  $realms = omniauth_provider_core_get_user_related_relying_parties();
+  if (!empty($realms)) {
+    $items = array();
+    $origin = FALSE;
+    foreach ($realms as $rp) { 
+      if (isset($_SESSION['omniauth_redirect']) && strpos($_SESSION['omniauth_redirect'], $rp['realm']) == false) {
+        $origin = '<strong>'. l(check_plain($rp['name']), check_url($rp['realm'])) .'</strong> '. check_url($rp['realm']);
+      }
+      else {
+        $items[] = '<strong>'. l(check_plain($rp['name']), check_url($rp['realm'])) .'</strong> '. check_url($rp['realm']);
+      }
+    }
+    return theme('omniauth_list_relying_parties', $items, $origin);
+  }
+}
+
+/**
+ * Overrideable theme function for block that lists relying parties
+ */
+function theme_omniauth_list_relying_parties($items = NULL, $origin = FALSE) {
+  $output = '';
+  if ($origin != FALSE) {
+    $output .= t('You came from:') . '<br />' . $origin;
+  }
+  if (!empty($items)) {
+    $output .= t('Available relying parties:') . '<br />';
+    $output .= theme('item_list', $items, NULL, 'ol');
+  }
+  return $output;
+}
+
+
+/**
+ * Get's relying parties that the user already had used.
+ */
 function omniauth_provider_core_get_user_related_relying_parties() {
   global $user;
   // get the relying parties the current user has logged into.
