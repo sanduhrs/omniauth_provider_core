@@ -34,11 +34,7 @@ function omniauth_provider_core_user($op, &$edit, &$account, $category = NULL) {
       break;
     case 'after_update':
      // if a redirect back to a relying party is set, goto it.
-     if (isset($_SESSION['omniauth_redirect'])) {
-       $omniauth_redirect_path = $_SESSION['omniauth_redirect'];
-       unset($_SESSION['omniauth_redirect']);
-       drupal_goto($omniauth_redirect_path);
-     }
+     omniauth_provider_core_profile_redirect();
      break;
   }
 }
@@ -51,6 +47,34 @@ function omniauth_provider_core_form_profile_node_form_alter(&$form, &$form_stat
   if (!user_access('administer content')) {
     $form['title']['#type'] = 'value';
     $form['body_field']['#type'] = 'value';
+  }
+  $form['#submit'][] = 'omniauth_provider_core_profile_node_form_submit';
+}
+
+function omniauth_provider_core_profile_node_form_submit(&$form, &$form_state) {
+  omniauth_provider_core_profile_redirect();
+}
+
+/**
+ * Implements hook_init()
+ * Saves origin into SESSIONS-variable
+ */
+function omniauth_provider_core_init() {
+  // If information about later redirect has been found
+  if (isset($_GET['omniauth_redirect'])) {
+    // store this information into the $_SESSION array
+    $_SESSION['omniauth_redirect'] = $_GET['omniauth_redirect'];
+  }
+}
+
+/**
+ * Redirects to the origin, which was saved in the SESSIONS-variable
+ */
+function omniauth_provider_core_profile_redirect() {
+  if (isset($_SESSION['omniauth_redirect'])) {
+   $omniauth_redirect_path = $_SESSION['omniauth_redirect'];
+   unset($_SESSION['omniauth_redirect']);
+   drupal_goto($omniauth_redirect_path);
   }
 }
 
@@ -77,16 +101,6 @@ function omniauth_provider_core_block($op = 'list', $delta = 0, $edit = array())
   }
 }
 
-/**
- * Implements hook_init()
- */
-function omniauth_provider_core_init() {
-  // If information about later redirect has been found
-  if (isset($_GET['omniauth_redirect'])) {
-    // store this information into the $_SESSION array
-    $_SESSION['omniauth_redirect'] = $_GET['omniauth_redirect'];
-  }
-}
 
 /**
  * Implements hook_theme()
