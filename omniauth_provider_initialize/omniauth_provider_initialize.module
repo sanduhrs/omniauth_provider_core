@@ -4,39 +4,43 @@
 /**
  * @file
  *
- * @authors
+ * @author
  * Stefan Auditor <stefan.auditor@erdfisch.de>
  * Felix Delattre <felix.delattre@erdfisch.de>
  */
 
 /**
- * Implement HOOK_user().
+ * Implements hook_user_insert().
  */
-function omniauth_provider_initialize_user($op, &$edit, &$account, $category = NULL) {
-  switch ($op) {
-    case 'insert':
-      $realms = omniauth_provider_initialize_get_realms();
-      foreach ($realms as $realm) {
-        omniauth_provider_initialize_trust_build_store($realm, $account);
-      }
-      break;
-    case 'delete':
-      $realms = omniauth_provider_initialize_get_realms();
-      foreach ($realms as $realm) {
-        omniauth_provider_initialize_trust_build_remove($realm, $account);
-      }
-      break;
+function omniauth_provider_initialize_user_insert(&$edit, $account, $category) {
+  $realms = omniauth_provider_initialize_get_realms();
+  foreach ($realms as $realm) {
+    omniauth_provider_initialize_trust_build_store($realm, $account);
   }
 }
 
 /**
- * 
+ * Implements hook_user_delete().
+ */
+function omniauth_provider_initialize_user_delete($account) {
+  $realms = omniauth_provider_initialize_get_realms();
+  foreach ($realms as $realm) {
+    omniauth_provider_initialize_trust_build_remove($realm, $account);
+  }
+}
+
+/**
+ * Get all realms
  */
 function omniauth_provider_initialize_get_realms() {
   $realms = array();
-  $result = db_query("SELECT realm FROM {openid_sso_provider_rps}");
-  while ($row = db_fetch_object($result)) {
-    $realms[$row->realm] = $row->realm;
+
+  $query = db_select('openid_sso_provider_rps', 'o');
+  $query->fields('o', array('realm'));
+  $result = $query->execute();
+
+  while($record = $result->fetchAssoc()) {
+    $realms[$record['realm']] = $record['realm'];
   }
   return $realms;
 }
@@ -70,12 +74,12 @@ function omniauth_provider_initialize_trust_build($realm, &$context) {
   if (empty($context['sandbox'])) {
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['current_user'] = 0;
-    $context['sandbox']['max'] = db_result(db_query('SELECT COUNT(DISTINCT uid) FROM {users} WHERE uid > 0'));
+    $context['sandbox']['max'] = db_query('SELECT COUNT(DISTINCT uid) FROM {users} WHERE uid > 0');
   }
   $limit = 5;
-  $result = db_query_range("SELECT uid FROM {users} WHERE uid > %d ORDER BY uid ASC", $context['sandbox']['current_user'], 0, $limit);
-  while ($row = db_fetch_array($result)) {
-    $account = user_load(array('uid' => $row['uid']));
+  $result = db_query_range("SELECT uid FROM {users} WHERE uid > :uid ORDER BY uid ASC", $context['sandbox']['current_user'], $limit, array(':uid' => 0));
+  while ($record = $result->fetchAssoc()) {
+    $account = user_load(array('uid' => $record['uid']));
     $context['results'][] = $account->uid .' : '. $account->name;
     $context['sandbox']['progress']++;
     $context['sandbox']['current_user'] = $account->uid;
@@ -119,20 +123,23 @@ function omniauth_provider_initialize_trust_build_store($realm, $account) {
     'last_time' => 0,
     'auto_release' => 1,
   );
-  drupal_write_record('openid_provider_relying_party', $dataset);
+  return drupal_write_record('openid_provider_relying_party', $dataset);
 }
 
 /**
  *
  */
 function omniauth_provider_initialize_trust_build_remove($realm, $account) {
-  db_query("DELETE FROM {openid_provider_relying_party} WHERE realm = '%s' AND uid = %d", $realm, $account->uid);
+  return db_delete('openid_provider_relying_party')
+    ->condition('uid', $account->uid)
+    ->condition('realm', $realm)
+    ->execute();
 }
 
 /**
  *
  */
-function omniauth_provider_initialize_form_openid_sso_provider_rp_remove_form_alter($form, &$form_state) {
+function omniauth_provider_initialize_form_openid_sso_provider_rp_remove_form_alter(&$form, &$form_state) {
   $form['#submit'][] = 'omniauth_provider_initialize_form_openid_sso_provider_rp_remove_form_alter_submit';
 }
 
@@ -140,6 +147,8 @@ function omniauth_provider_initialize_form_openid_sso_provider_rp_remove_form_al
  *
  */
 function omniauth_provider_initialize_form_openid_sso_provider_rp_remove_form_alter_submit(&$form, &$form_state) {
-  $realm = $form['#realm'];
-  db_query("DELETE FROM {openid_provider_relying_party} WHERE realm = '%s'", $realm);
+  $realm = $form_state['cache']['realm'];
+  return db_delete('openid_provider_relying_party')
+    ->condition('realm', $realm)
+    ->execute();
 }
