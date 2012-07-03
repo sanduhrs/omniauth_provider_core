@@ -1,8 +1,0 @@
-; $Id$
-name = "Omniauth Provider Access"
-description = "Omniauth Provider Bundle"
-package = "OpenID"
-project = "omniauth_provider"
-core = 6.x
-
-dependencies[] = 'content_profile'
