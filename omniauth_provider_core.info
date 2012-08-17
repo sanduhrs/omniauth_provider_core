@@ -3,6 +3,7 @@ description = OmniAuth Provider Bundle
 core = 7.x
 package = Features
 php = 5.2.4
+version = 7.x-1.0
 project = omniauth_provider_core
 dependencies[] = ctools
 dependencies[] = features

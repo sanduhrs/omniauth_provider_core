@@ -15,7 +15,7 @@ function omniauth_provider_core_default_page_manager_pages() {
   $page->task = 'page';
   $page->admin_title = 'OmniAuth landing page';
   $page->admin_description = '';
-  $page->path = 'login';
+  $page->path = 'front';
   $page->access = array();
   $page->menu = array();
   $page->arguments = array();
@@ -41,6 +41,21 @@ function omniauth_provider_core_default_page_manager_pages() {
     'css' => '',
     'contexts' => array(),
     'relationships' => array(),
+    'access' => array(
+      'plugins' => array(
+        0 => array(
+          'name' => 'role',
+          'settings' => array(
+            'rids' => array(
+              0 => 1,
+            ),
+          ),
+          'context' => 'logged-in-user',
+          'not' => FALSE,
+        ),
+      ),
+      'logic' => 'and',
+    ),
   );
   $display = new panels_display();
   $display->layout = 'onecol';
@@ -77,6 +92,37 @@ function omniauth_provider_core_default_page_manager_pages() {
   $display->hide_title = PANELS_TITLE_FIXED;
   $display->title_pane = 'new-1';
   $handler->conf['display'] = $display;
+  $page->default_handlers[$handler->name] = $handler;
+  $handler = new stdClass();
+  $handler->disabled = FALSE; /* Edit this to true to make a default handler disabled initially */
+  $handler->api_version = 1;
+  $handler->name = 'page_omniauth_landing_page_http_response';
+  $handler->task = 'page';
+  $handler->subtask = 'omniauth_landing_page';
+  $handler->handler = 'http_response';
+  $handler->weight = 2;
+  $handler->conf = array(
+    'title' => 'User profile',
+    'contexts' => array(),
+    'relationships' => array(),
+    'code' => '301',
+    'destination' => 'user',
+    'access' => array(
+      'plugins' => array(
+        0 => array(
+          'name' => 'role',
+          'settings' => array(
+            'rids' => array(
+              0 => 1,
+            ),
+          ),
+          'context' => 'logged-in-user',
+          'not' => TRUE,
+        ),
+      ),
+      'logic' => 'and',
+    ),
+  );
   $page->default_handlers[$handler->name] = $handler;
   $pages['omniauth_landing_page'] = $page;
 
