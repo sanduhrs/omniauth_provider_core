@@ -17,6 +17,7 @@ dependencies[] = openid_sso_provider
 dependencies[] = openid_sso_provider_rps
 dependencies[] = page_manager
 dependencies[] = panels
+dependencies[] = profile2
 dependencies[] = strongarm
 dependencies[] = views
 datestamp = 1345193475

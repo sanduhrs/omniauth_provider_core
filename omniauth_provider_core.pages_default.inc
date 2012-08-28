@@ -30,9 +30,9 @@ function omniauth_provider_core_default_page_manager_pages() {
   $handler->task = 'page';
   $handler->subtask = 'omniauth_landing_page';
   $handler->handler = 'panel_context';
-  $handler->weight = 1;
+  $handler->weight = 0;
   $handler->conf = array(
-    'title' => 'Generic login',
+    'title' => 'Login',
     'no_blocks' => 0,
     'pipeline' => 'standard',
     'body_classes_to_remove' => '',
@@ -67,7 +67,7 @@ function omniauth_provider_core_default_page_manager_pages() {
     ),
   );
   $display->cache = array();
-  $display->title = '';
+  $display->title = '<notitle>';
   $display->content = array();
   $display->panels = array();
     $pane = new stdClass();
@@ -82,7 +82,9 @@ function omniauth_provider_core_default_page_manager_pages() {
       'override_title_text' => '',
     );
     $pane->cache = array();
-    $pane->style = array();
+    $pane->style = array(
+      'settings' => NULL,
+    );
     $pane->css = array();
     $pane->extras = array();
     $pane->position = 0;
@@ -100,9 +102,9 @@ function omniauth_provider_core_default_page_manager_pages() {
   $handler->task = 'page';
   $handler->subtask = 'omniauth_landing_page';
   $handler->handler = 'http_response';
-  $handler->weight = 2;
+  $handler->weight = 1;
   $handler->conf = array(
-    'title' => 'User profile',
+    'title' => 'Profile',
     'contexts' => array(),
     'relationships' => array(),
     'code' => '301',
