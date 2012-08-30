@@ -16,7 +16,10 @@ function omniauth_provider_core_default_page_manager_pages() {
   $page->admin_title = 'OmniAuth landing page';
   $page->admin_description = '';
   $page->path = 'front';
-  $page->access = array();
+  $page->access = array(
+    'type' => 'none',
+    'settings' => NULL,
+  );
   $page->menu = array();
   $page->arguments = array();
   $page->conf = array(
@@ -30,9 +33,9 @@ function omniauth_provider_core_default_page_manager_pages() {
   $handler->task = 'page';
   $handler->subtask = 'omniauth_landing_page';
   $handler->handler = 'panel_context';
-  $handler->weight = 0;
+  $handler->weight = -29;
   $handler->conf = array(
-    'title' => 'Login',
+    'title' => 'Generic Login',
     'no_blocks' => 0,
     'pipeline' => 'standard',
     'body_classes_to_remove' => '',
@@ -102,7 +105,7 @@ function omniauth_provider_core_default_page_manager_pages() {
   $handler->task = 'page';
   $handler->subtask = 'omniauth_landing_page';
   $handler->handler = 'http_response';
-  $handler->weight = 1;
+  $handler->weight = -28;
   $handler->conf = array(
     'title' => 'Profile',
     'contexts' => array(),
@@ -125,6 +128,88 @@ function omniauth_provider_core_default_page_manager_pages() {
       'logic' => 'and',
     ),
   );
+  $page->default_handlers[$handler->name] = $handler;
+  $handler = new stdClass();
+  $handler->disabled = FALSE; /* Edit this to true to make a default handler disabled initially */
+  $handler->api_version = 1;
+  $handler->name = 'page_omniauth_landing_page_panel_context_2';
+  $handler->task = 'page';
+  $handler->subtask = 'omniauth_landing_page';
+  $handler->handler = 'panel_context';
+  $handler->weight = -30;
+  $handler->conf = array(
+    'title' => 'P7 Login',
+    'no_blocks' => 0,
+    'pipeline' => 'standard',
+    'body_classes_to_remove' => '',
+    'body_classes_to_add' => '',
+    'css_id' => '',
+    'css' => '',
+    'contexts' => array(),
+    'relationships' => array(),
+    'access' => array(
+      'plugins' => array(
+        0 => array(
+          'name' => 'role',
+          'settings' => array(
+            'rids' => array(
+              0 => 1,
+            ),
+          ),
+          'context' => 'logged-in-user',
+          'not' => FALSE,
+        ),
+        1 => array(
+          'name' => 'openid_sso_provider_selection_ctools_access_realm',
+          'settings' => array(
+            'openid_sso_provider_selection_ctools_access_realm' => array(
+              'http://r7.oa/' => 'http://r7.oa/',
+              'http://r6.oa/' => 0,
+            ),
+          ),
+          'not' => FALSE,
+        ),
+      ),
+      'logic' => 'and',
+    ),
+  );
+  $display = new panels_display();
+  $display->layout = 'onecol';
+  $display->layout_settings = array();
+  $display->panel_settings = array(
+    'style_settings' => array(
+      'default' => NULL,
+      'middle' => NULL,
+    ),
+  );
+  $display->cache = array();
+  $display->title = 'You came from R7';
+  $display->content = array();
+  $display->panels = array();
+    $pane = new stdClass();
+    $pane->pid = 'new-2';
+    $pane->panel = 'middle';
+    $pane->type = 'block';
+    $pane->subtype = 'user-login';
+    $pane->shown = TRUE;
+    $pane->access = array();
+    $pane->configuration = array(
+      'override_title' => 0,
+      'override_title_text' => '',
+    );
+    $pane->cache = array();
+    $pane->style = array(
+      'settings' => NULL,
+    );
+    $pane->css = array();
+    $pane->extras = array();
+    $pane->position = 0;
+    $pane->locks = array();
+    $display->content['new-2'] = $pane;
+    $display->panels['middle'][0] = 'new-2';
+  $display->hide_title = PANELS_TITLE_FIXED;
+  $display->title_pane = 'new-2';
+  $handler->conf['display'] = $display;
   $page->default_handlers[$handler->name] = $handler;
   $pages['omniauth_landing_page'] = $page;
 

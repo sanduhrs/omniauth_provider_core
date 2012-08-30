@@ -31,7 +31,7 @@ function omniauth_provider_core_user_default_permissions() {
   $permissions['administer openid_sso_provider_rps'] = array(
     'name' => 'administer openid_sso_provider_rps',
     'roles' => array(),
-    'module' => 'openid_sso_provider_rps',
+    'module' => 'openid_sso_provider',
   );
 
   // Exported permission: cancel account.
@@ -59,7 +59,7 @@ function omniauth_provider_core_user_default_permissions() {
   $permissions['view openid_sso_provider_rps entities'] = array(
     'name' => 'view openid_sso_provider_rps entities',
     'roles' => array(),
-    'module' => 'openid_sso_provider_rps',
+    'module' => 'openid_sso_provider',
   );
 
   return $permissions;
