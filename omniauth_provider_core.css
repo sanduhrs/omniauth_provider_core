@@ -1,0 +1,38 @@
+
+
+.definition-list dl dt.active-term {
+
+}
+
+.definition-list dl dt.active-term:hover {
+  cursor: default;
+  color: white;
+}
+
+.definition-list dl dt.active-term:after {
+  display: block;
+  content: " ";
+  position: absolute;
+  left: 50%;
+}
+
+.definition-list dl dt:hover {
+  cursor: pointer;
+}
+
+.definition-list dd {
+  width: auto;
+  -webkit-transition: opacity 0.35s ease-in-out;
+  -moz-transition: opacity 0.35s ease-in-out;
+  -ms-transition: opacity 0.35s ease-in-out;
+  -o-transition: opacity 0.35s ease-in-out;
+  transition: opacity 0.35s ease-in-out;
+  display: none;
+  padding: 4%;
+  z-index: 1;
+}
+
+.definition-list dd.active-description {
+  display: block;
+}
+

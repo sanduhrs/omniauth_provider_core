@@ -4,3 +4,348 @@
  */
 
 include_once('omniauth_provider_core.features.inc');
+
+
+/**
+ * Implementation of hook_block_info().
+ */
+function omniauth_provider_core_block_info() {
+
+  $blocks['omniauth_provider_login'] = array(
+    'info' => t('Omniauth-User-Login'),
+  );
+  if (module_exists('devel')) {
+    $blocks['omniauth_provider_devel_origin'] = array(
+      'info' => t('Omniauth origin rp switcher block'),
+    );
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implementation of hook_block_view().
+ */
+function omniauth_provider_core_block_view($delta) {
+  $block = array();
+  switch ($delta) {
+    case 'omniauth_provider_login':
+      if (user_is_anonymous()) {
+        $block['content'] = omniauth_provider_core_login_block();
+      }
+      break;
+    case 'omniauth_provider_devel_origin':
+      if (module_exists('devel') && user_access('access devel information')) {
+        $block = omniauth_provider_core_devel_origin_block();
+      }
+      break;
+  }
+  return $block;
+}
+
+function omniauth_provider_core_form_page_manager_page_form_basic_alter(&$form, &$form_state) {
+  if ($form['name']['#value'] == 'omniauth_login') {
+
+    // No frontpage option
+    $form['frontpage']['#type'] = 'value';
+
+    // Create a content field
+    $form['path_display'] = $form['path'];
+    $form['path_display']['#type'] = 'item';
+    $form['path_display']['#markup'] = l('user/login', 'user/login');
+    $form['path_display']['#description'] = t('This has been overridden by the !module_name module and can not be changed', array('!module_name' => '<i>Omniauth Provider Core</i>'));
+
+    // Hide textfield and set static value
+    $form['path']['#type'] = 'value';
+    $form['path']['#default_value'] = 'user/login/panel';
+    $form['path']['#value'] = 'user/login/panel';
+  }
+}
+
+
+/**
+ *
+ */
+function omniauth_provider_core_login_block($form = array()) {
+
+  $form_connector = drupal_get_form('connector_button_form');
+
+  // Build renderable definition-list array
+  $login_block['list'] = array(
+    // TODO: Change when backport is available #54898
+    '#theme' => 'omniauth_provider_core_description_list',
+    '#groups' => array(),
+    '#attributes' => array(
+      'class' => array('omniauth-provider-core-login'),
+    ),
+  );
+  $form = drupal_get_form('user_login_block');
+  $groups = &$login_block['list']['#groups'];
+  $groups['drupal_login'] = array(
+    'term' => array(t('Login')),
+    'description' => array(drupal_render($form)),
+    'attributes' => array(
+      'class' => array('omniauth-provider-core-login-drupal'),
+    ),
+  );
+
+  if (isset($form_connector['oauthconnector_facebook'])) {
+
+    $provider = t('Facebook');
+
+    // Reduce connector form to facebook
+    $connector_facebook = $form_connector;
+    unset($connector_facebook['oauthconnector_twitter']);
+    unset($connector_facebook['oauthconnector_google']);
+
+    $groups['facebook'] = array(
+      'term' => array('<span><span class="icon"></span>' . $provider . '</span>'),
+      'description' => array(t('Use your existing %provider account, to get access to the web services of Greenpeace.', array('%provider' => $provider)) . drupal_render($connector_facebook)),
+      'attributes' => array(
+        'class' => array('omniauth-provider-core-login-facebook'),
+      ),
+    );
+  }
+
+  if (isset($form_connector['oauthconnector_google'])) {
+
+    $provider = t('Google');
+
+    // Reduce connector form to google
+    $connector_google = $form_connector;
+    unset($connector_google['oauthconnector_facebook']);
+    unset($connector_google['oauthconnector_twitter']);
+
+    $groups['google'] = array(
+      'term' => array('<span><span class="icon"></span>' . $provider . '</span>'),
+      'description' => array(t('Use your existing %provider account, to get access to the web services of Greenpeace.', array('%provider' => $provider)) . drupal_render($connector_google)),
+      'attributes' => array(
+        'class' => array('omniauth-provider-core-login-google'),
+      ),
+    );
+  }
+
+
+  if (isset($form_connector['oauthconnector_twitter'])) {
+
+    $provider = t('Twitter');
+
+    // Reduce connector form to twitter
+    $connector_twitter = $form_connector;
+    unset($connector_twitter['oauthconnector_facebook']);
+    unset($connector_twitter['oauthconnector_google']);
+
+    $groups['twitter'] = array(
+      'term' => array('<span><span class="icon"></span>' . $provider . '</span>'),
+      'description' => array(t('Use your existing %provider account, to get access to the web services of Greenpeace.', array('%provider' => $provider)) . drupal_render($connector_twitter)),
+      'attributes' => array(
+       'class' => array('omniauth-provider-core-login-twitter'),
+      ),
+    );
+  }
+
+  return drupal_render($login_block);
+}
+
+
+/**
+ * Generates a block to select a certain origin (from existing Relyin Parties)
+ */
+function omniauth_provider_core_devel_origin_block() {
+
+  $items = array();
+  $origin_realm = FALSE;
+
+  // Give information about the current origin rp.
+  if (isset($_SESSION['openid_sso_realm'])) {
+    $origin_rp = openid_sso_provider_rps_load_by_realm($_SESSION['openid_sso_realm']);
+    $origin_realm = $origin_rp->realm;
+    $output = t('The origin relying party is set to !rp', array('!rp' => l($origin_rp->label, $origin_rp->realm)));
+    // Clear link
+    $items[] = l(t('Clear origin RPs'), 'devel/relying-party/switcher', array('query' => array('destination' => current_path(), 'realm' => 'clear')));
+  }
+  else {
+    $output = t('Currently no relyping party is set as origin.');
+  }
+
+  // Get listing of relying parties
+  $relying_parties = openid_sso_provider_get_relying_parties();
+  foreach ($relying_parties as $relying_party) {
+    if ($relying_party->realm != $origin_realm) {
+      $items[] = l($relying_party->label, 'devel/relying-party/switcher',
+        array('query' => array(
+          'destination' => current_path(),
+          'realm' => $relying_party->realm,
+        ))
+      );
+    }
+  }
+
+  $output .= theme('item_list', array(
+    'title' => t('Select another option') . ':',
+    'items' => $items));
+
+  return array(
+    'subject' => t('Relying party origin switcher'),
+    'content' => $output,
+    );
+}
+
+
+/**
+ *
+ */
+function omniauth_provider_core_form_user_login_block_alter(&$form, &$form_state, $form_id) {
+
+  $form['name']['#placeholder'] = $form['name']['#title'];
+  $form['name']['#field_prefix'] = '<i class="icon-envelope"></i>';
+  unset($form['name']['#title']);
+  $form['pass']['#placeholder'] = $form['pass']['#title'];
+  $form['pass']['#field_prefix'] = '<i class="icon-key"></i>';
+  unset($form['pass']['#title']);
+  $form['actions']['#weight'] = 98;
+  $form['actions']['#prefix'] = '<div class="clear"></div>';
+  $form['links']['#weight'] = 99;
+  $form['links']['#markup'] = '
+  <div class="item-list">
+    <ul>
+      <li class="first">
+        <i class="icon-user"></i>
+        <a href="/user/register" title="Create a new user account.">Create new account</a>
+      </li>
+      <li class="last">
+        <i class="icon-lock"></i>
+        <a href="/user/password" title="Request new password via e-mail.">Request new password</a>
+      </li>
+    </ul>
+  </div>';
+  // dsm($form);
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function omniauth_provider_core_theme() {
+
+  return array(
+    // TODO: Remove when backport is available #54898
+    'omniauth_provider_core_description_list' => array(
+      'variables' => array('groups' => array(),'title' => NULL, 'attributes' => array()),
+      'file' => 'omniauth_provider_core.theme.inc'
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function omniauth_provider_core_menu() {
+  $items = array();
+  $items['devel/relying-party/switcher'] = array(
+    'page callback' => 'omniauth_provider_core_devel_switch_origin',
+    'access arguments' => array('access devel information'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter()
+ */
+function omniauth_provider_core_menu_alter(&$items) {
+
+  // Reroute user/login path to call panel
+  $items['user/login']['page callback'] = 'omniauth_provider_core_login_page';
+}
+
+
+/**
+ * Call back for user/login path
+ * Allows a panel for the existing path.
+ */
+function omniauth_provider_core_login_page() {
+
+  module_load_include("inc", "page_manager", "plugins/tasks/page");
+  $subtask_id = "omniauth_login";
+  return page_manager_page_execute($subtask_id);
+}
+
+
+/**
+ * Implements hook_theme_registry_alter()
+ */
+function omniauth_provider_core_theme_registry_alter(&$theme_registry) {
+
+  // Add a new preprocess function to all available views style plugins.
+  foreach (views_fetch_plugin_data('style') as $style_name => $style_data) {
+    if (isset($style_data['theme'])) {
+      $theme_registry[$style_data['theme']]['preprocess functions'][] = 'omniauth_provider_core_views_style_plugin_preprocess_active_row';
+    }
+  }
+}
+
+/**
+ * Special preprocess function for views row plugins, to see if an active relying party has been set.
+ */
+function omniauth_provider_core_views_style_plugin_preprocess_active_row(&$vars) {
+
+  $origin_realm = isset($_SESSION['openid_sso_realm']) ? $_SESSION['openid_sso_realm'] : NULL;
+
+  foreach ($vars['view']->result as $row_index => $row_data) {
+    if (!isset($vars['already_set_active_row'])) {
+      if (isset($row_data->openid_sso_provider_rps_realm)) {
+        if ($row_data->openid_sso_provider_rps_realm == $origin_realm) {
+          $vars['classes_array'][$row_index] .= ' active';
+          $vars['classes'][$row_index][] = 'active';
+          $vars['already_set_active_row'] = TRUE;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter()
+ */
+function omniauth_provider_core_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'user_pass_reset' && !isset($_GET['realm'])) {
+    $form['wrapper'] = array(
+      '#type' => 'fieldset',
+    );
+    $form['wrapper']['message'] = $form['message'];
+    unset($form['message']);
+    $form['wrapper']['help'] = $form['help'];
+    unset($form['help']);
+    $form['wrapper']['actions'] = $form['actions'];
+    unset($form['actions']);
+  }
+  elseif ($form_id == 'user_pass') {
+    $form['wrapper'] = array(
+      '#type' => 'fieldset',
+    );
+    $form['wrapper']['name'] = $form['name'];
+    unset($form['name']);
+    $form['wrapper']['actions'] = $form['actions'];
+    unset($form['actions']);
+  }
+}
+
+
+function omniauth_provider_core_devel_switch_origin() {
+  if (isset($_GET['realm'])) {
+    if ($_GET['realm'] == 'clear') {
+      unset($_SESSION['openid_sso_realm']);
+    }
+    else {
+      $origin_rp = openid_sso_provider_rps_load_by_realm($_GET['realm']);
+      if ($origin_rp) {
+        $_SESSION['openid_sso_realm'] = $_GET['realm'];
+        drupal_set_message(t('Origin relying party has been set to !rp', array('!rp' => l($origin_rp->label, $origin_rp->realm))));
+      }
+    }
+  }
+  drupal_goto($_GET['destination']);
+}
