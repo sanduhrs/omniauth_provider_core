@@ -14,6 +14,10 @@ function omniauth_provider_core_block_info() {
   $blocks['omniauth_provider_login'] = array(
     'info' => t('Omniauth-User-Login'),
   );
+
+  $blocks['omniauth_provider_identity_links'] = array(
+    'info' => t('Omniauth-User-Links-On-Relying-Parties'),
+  );
   if (module_exists('devel')) {
     $blocks['omniauth_provider_devel_origin'] = array(
       'info' => t('Omniauth origin rp switcher block'),
@@ -32,6 +36,11 @@ function omniauth_provider_core_block_view($delta) {
     case 'omniauth_provider_login':
       if (user_is_anonymous()) {
         $block['content'] = omniauth_provider_core_login_block();
+      }
+      break;
+    case 'omniauth_provider_identity_links':
+      if (user_access('administer users')) {
+        $block = omniauth_provider_core_identity_links_block();
       }
       break;
     case 'omniauth_provider_devel_origin':
@@ -89,7 +98,8 @@ function omniauth_provider_core_login_block($form = array()) {
     ),
   );
 
-  if (isset($form_connector['oauthconnector_facebook'])) {
+  $connectors_display = array_values(variable_get('openid_provider_social_login'));
+  if (isset($form_connector['oauthconnector_facebook']) && in_array('oauthconnector_facebook', $connectors_display, true)) {
 
     $provider = t('Facebook');
 
@@ -100,14 +110,14 @@ function omniauth_provider_core_login_block($form = array()) {
 
     $groups['facebook'] = array(
       'term' => array('<span><span class="icon"></span>' . $provider . '</span>'),
-      'description' => array(t('Use your existing %provider account, to get access to the web services of Greenpeace.', array('%provider' => $provider)) . drupal_render($connector_facebook)),
+      'description' => array(t('Use your existing %provider account, to get access to the web services.', array('%provider' => $provider)) . drupal_render($connector_facebook)),
       'attributes' => array(
         'class' => array('omniauth-provider-core-login-facebook'),
       ),
     );
   }
 
-  if (isset($form_connector['oauthconnector_google'])) {
+  if (isset($form_connector['oauthconnector_google']) && in_array('oauthconnector_google', $connectors_display, true)) {
 
     $provider = t('Google');
 
@@ -118,15 +128,14 @@ function omniauth_provider_core_login_block($form = array()) {
 
     $groups['google'] = array(
       'term' => array('<span><span class="icon"></span>' . $provider . '</span>'),
-      'description' => array(t('Use your existing %provider account, to get access to the web services of Greenpeace.', array('%provider' => $provider)) . drupal_render($connector_google)),
+      'description' => array(t('Use your existing %provider account, to get access to the web services.', array('%provider' => $provider)) . drupal_render($connector_google)),
       'attributes' => array(
         'class' => array('omniauth-provider-core-login-google'),
       ),
     );
   }
 
-
-  if (isset($form_connector['oauthconnector_twitter'])) {
+  if (isset($form_connector['oauthconnector_twitter']) && in_array('oauthconnector_twitter', $connectors_display, true)) {
 
     $provider = t('Twitter');
 
@@ -137,7 +146,7 @@ function omniauth_provider_core_login_block($form = array()) {
 
     $groups['twitter'] = array(
       'term' => array('<span><span class="icon"></span>' . $provider . '</span>'),
-      'description' => array(t('Use your existing %provider account, to get access to the web services of Greenpeace.', array('%provider' => $provider)) . drupal_render($connector_twitter)),
+      'description' => array(t('Use your existing %provider account, to get access to the web services.', array('%provider' => $provider)) . drupal_render($connector_twitter)),
       'attributes' => array(
        'class' => array('omniauth-provider-core-login-twitter'),
       ),
@@ -145,6 +154,43 @@ function omniauth_provider_core_login_block($form = array()) {
   }
 
   return drupal_render($login_block);
+}
+
+
+/**
+ * Generates a block to select a certain origin (from existing Relyin Parties)
+ */
+function omniauth_provider_core_identity_links_block($uid = NULL) {
+
+  // Obtain user id from url.
+  if ($uid == NULL) {
+    $uid = arg(1);
+  }
+
+  // Check if user id is numeric/valid.
+  if (is_numeric($uid)) {
+
+    module_load_include('inc', 'openid_provider', 'openid_provider');
+    $items = array();
+    $rps  = _openid_provider_rp_load($uid);
+    foreach ($rps as $rp) {
+      $rp = openid_sso_provider_rps_load_by_realm($rp->realm);
+      if (is_object($rp)) {
+        $items[$rp->machine_name] = array(
+          'data' => l($rp->label, $rp->realm . 'openid/profile/redirect', array(
+            'query' => array(
+              'identity' => rawurlencode(openid_provider_url(openid_provider_user_path($uid)))
+            ),
+          )),
+        );
+      }
+    }
+
+    return array(
+      'subject' => t('Related accounts on the relying parties'),
+      'content' => theme('item_list', array('items' => $items)),
+    );
+  }
 }
 
 
@@ -206,20 +252,11 @@ function omniauth_provider_core_form_user_login_block_alter(&$form, &$form_state
   $form['actions']['#weight'] = 98;
   $form['actions']['#prefix'] = '<div class="clear"></div>';
   $form['links']['#weight'] = 99;
-  $form['links']['#markup'] = '
-  <div class="item-list">
-    <ul>
-      <li class="first">
-        <i class="icon-user"></i>
-        <a href="/user/register" title="Create a new user account.">Create new account</a>
-      </li>
-      <li class="last">
-        <i class="icon-lock"></i>
-        <a href="/user/password" title="Request new password via e-mail.">Request new password</a>
-      </li>
-    </ul>
-  </div>';
-  // dsm($form);
+  $login_links = array(
+    '<i class="icon-user"></i>' . l(t('Create new account'), 'user/register'),
+    '<i class="icon-lock"></i>' . l(t('Request new password'), 'user/password'),
+  );
+  $form['links']['#markup'] = theme('item_list', array('items' => $login_links));
 }
 
 
@@ -250,28 +287,6 @@ function omniauth_provider_core_menu() {
   );
   return $items;
 }
-
-/**
- * Implements hook_menu_alter()
- */
-function omniauth_provider_core_menu_alter(&$items) {
-
-  // Reroute user/login path to call panel
-  $items['user/login']['page callback'] = 'omniauth_provider_core_login_page';
-}
-
-
-/**
- * Call back for user/login path
- * Allows a panel for the existing path.
- */
-function omniauth_provider_core_login_page() {
-
-  module_load_include("inc", "page_manager", "plugins/tasks/page");
-  $subtask_id = "omniauth_login";
-  return page_manager_page_execute($subtask_id);
-}
-
 
 /**
  * Implements hook_theme_registry_alter()
@@ -331,6 +346,21 @@ function omniauth_provider_core_form_alter(&$form, &$form_state, $form_id) {
     $form['wrapper']['actions'] = $form['actions'];
     unset($form['actions']);
   }
+
+  elseif ($form_id == 'openid_provider_admin_settings') {
+    $default_values = array_values(variable_get('openid_provider_social_login', array()));
+    $connectors = _connector_get_connectors();
+    $options = array();
+    foreach ($connectors as $connector) {
+      $options[$connector['name']] = $connector['title'];
+    }
+    $form['openid_provider_social_login'] = array(
+      '#type' => 'checkboxes',
+      '#options' => $options,
+      '#default_value' => $default_values,
+      '#title' => t('Show the following social media logins'),
+    );
+  }
 }
 
 
@@ -348,4 +378,13 @@ function omniauth_provider_core_devel_switch_origin() {
     }
   }
   drupal_goto($_GET['destination']);
+}
+
+
+/**
+ * Implements hook_form_alter() for 'form_user_profile'
+ */
+function omniauth_provider_core_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
+  // Hide locale information.
+  $form['locale']['#access'] = FALSE;
 }

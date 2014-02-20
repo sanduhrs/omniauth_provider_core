@@ -38,6 +38,12 @@ function omniauth_provider_core_context_default_contexts() {
           'region' => 'sidebar_second',
           'weight' => '-11',
         ),
+        'block-2' => array(
+          'module' => 'block',
+          'delta' => '2',
+          'region' => 'header_second',
+          'weight' => '-9',
+        ),
       ),
     ),
   );

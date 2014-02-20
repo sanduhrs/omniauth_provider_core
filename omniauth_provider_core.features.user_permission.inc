@@ -20,6 +20,16 @@ function omniauth_provider_core_user_default_permissions() {
     'module' => 'node',
   );
 
+  // Exported permission: 'access user profiles'.
+  $permissions['access user profiles'] = array(
+    'name' => 'access user profiles',
+    'roles' => array(
+      'administrator' => 'administrator',
+      'authenticated user' => 'authenticated user',
+    ),
+    'module' => 'user',
+  );
+
   // Exported permission: 'administer openid provider'.
   $permissions['administer openid provider'] = array(
     'name' => 'administer openid provider',
