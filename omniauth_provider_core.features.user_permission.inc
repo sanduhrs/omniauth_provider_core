@@ -51,13 +51,6 @@ function omniauth_provider_core_user_default_permissions() {
     'module' => 'user',
   );
 
-  // Exported permission: 'change own username'.
-  $permissions['change own username'] = array(
-    'name' => 'change own username',
-    'roles' => array(),
-    'module' => 'user',
-  );
-
   // Exported permission: 'manage own openid sites'.
   $permissions['manage own openid sites'] = array(
     'name' => 'manage own openid sites',
